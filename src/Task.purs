@@ -1,5 +1,6 @@
 module Task
   ( Callback
+  , ParTask
   , Promise
   , Task(..)
   , Canceler
