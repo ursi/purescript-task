@@ -1,6 +1,10 @@
-exports.fromPromiseImpl = makeTask => effectUnit => promiseThunk => {
+exports.fromPromiseImpl = makeTask => effectUnit => effectPromise => {
 	return makeTask(aC => xC => () => {
-		promiseThunk().then(aC, xC);
+		effectPromise().then(
+			a => aC(a)(),
+			x => xC(x)()
+		);
+
 		return effectUnit;
 	});
 };
