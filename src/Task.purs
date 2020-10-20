@@ -12,7 +12,6 @@ module Task
   ) where
 
 import MasonPrelude
-import Control.Apply (lift2)
 import Control.Parallel (class Parallel)
 import Data.Bifunctor (class Bifunctor)
 import Data.Newtype (class Newtype, unwrap)
