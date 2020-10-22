@@ -37,6 +37,39 @@ main = do
   assertRight "parallel instance" identity $ sequential $ parallel $ pure true
   assertRight "ParTask map" (eq 3) $ sequential $ add 1 <$> pure 2
   assertRight "ParTask apply" (eq 3) $ sequential $ lift2 add (pure 1) (pure 2)
+  assertRight "ParTask alt (succeed, sync)" (eq 1) $ sequential $ pure 1 <|> pure 2 <|> pure 3
+  assertRight "ParTask alt (mixed, sync)" identity $ sequential
+    $ parallel (Task.fail false)
+    <|> parallel (Task.fail false)
+    <|> pure true
+  assertLeft "ParTask alt (fail, sync)" (eq 3) $ sequential
+    $ parallel (Task.fail 1)
+    <|> parallel (Task.fail 2)
+    <|> parallel (Task.fail 3)
+  assertRight "ParTask alt (succeed, mixed)" (eq 3) $ sequential
+    $ parallel (wait 500 *> pure 1)
+    <|> parallel (wait 500 *> pure 2)
+    <|> pure 3
+  assertRight "ParTask alt (mixed, mixed)" identity $ sequential
+    $ parallel (wait 500 *> Task.fail false)
+    <|> parallel (wait 500 *> Task.fail false)
+    <|> pure true
+  assertLeft "ParTask alt (fail, mixed)" (eq 1) $ sequential
+    $ parallel (wait 500 *> Task.fail 1)
+    <|> parallel (wait 300 *> Task.fail 2)
+    <|> parallel (Task.fail 3)
+  assertRight "ParTask alt (succeed, async)" (eq 3) $ sequential
+    $ parallel (wait 500 *> pure 1)
+    <|> parallel (wait 400 *> pure 2)
+    <|> parallel (wait 300 *> pure 3)
+  assertRight "ParTask alt (mixed, async)" identity $ sequential
+    $ parallel (wait 500 *> pure true)
+    <|> parallel (wait 400 *> Task.fail false)
+    <|> parallel (wait 300 *> Task.fail false)
+  assertLeft "ParTask alt (fail, async)" (eq 1) $ sequential
+    $ parallel (wait 500 *> Task.fail 1)
+    <|> parallel (wait 400 *> Task.fail 2)
+    <|> parallel (wait 300 *> Task.fail 3)
   testDelayRight "delay" 500 $ wait 500
   testDelayLeft "delay with error" 500
     $ wait 500
@@ -54,6 +87,14 @@ main = do
       , wait 600
       , wait 500 *> Task.fail unit
       ]
+  testDelayRight "ParTask alt delay (succeed)" 300 $ sequential
+    $ parallel (wait 500 *> pure unit)
+    <|> parallel (wait 400 *> pure unit)
+    <|> parallel (wait 300 *> pure unit)
+  testDelayLeft "ParTask alt delay (fail)" 500 $ sequential
+    $ parallel (wait 500 *> Task.fail unit)
+    <|> parallel (wait 400 *> Task.fail unit)
+    <|> parallel (wait 300 *> Task.fail unit)
   assertLeft
     "error callback is called only once (non-parallel, sync)"
     (eq 1)
