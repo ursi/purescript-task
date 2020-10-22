@@ -1,5 +1,6 @@
 module Task
   ( Callback
+  , ForeignCallback
   , ParTask
   , Promise
   , Task(..)
@@ -7,6 +8,7 @@ module Task
   , bindError
   , capture
   , fail
+  , fromForeign
   , fromPromise
   , makeTask
   , run
@@ -146,3 +148,12 @@ foreign import fromPromiseImpl ::
 
 fromPromise :: ∀ x a. Effect (Promise x a) -> Task x a
 fromPromise = fromPromiseImpl makeTask $ pure unit
+
+type ForeignCallback a
+  = EffectFn1 a Unit
+
+fromForeign ::
+  ∀ x a.
+  (ForeignCallback a -> ForeignCallback x -> Effect Canceler) ->
+  Task x a
+fromForeign f = Task \aC xC ref -> f (mkEffectFn1 aC) (mkEffectFn1 xC) >>= Ref.write ~$ ref
