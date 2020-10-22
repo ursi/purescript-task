@@ -1,6 +1,7 @@
 module Test.Main where
 
-import MasonPrelude
+import MasonPrelude hiding (throw)
+import MasonPrelude as MP
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
 import Control.Parallel (parallel, sequential)
@@ -120,10 +121,8 @@ waitReject = Task.fromPromise <. waitRejectImpl
 
 foreign import now :: Effect Int
 
-foreign import throwImpl :: String -> Effect Unit
-
 throw :: ∀ x. String -> Task x Unit
-throw = liftEffect <. throwImpl
+throw = liftEffect <. MP.throw
 
 status :: Boolean -> String -> Effect Unit
 status bool str =
