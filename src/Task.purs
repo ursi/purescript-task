@@ -36,7 +36,7 @@ instance functorTask :: Functor (Task x) where
   map f (Task t) = Task $ t <. (.>) f
 
 instance applyTask :: Apply (Task x) where
-  apply (Task tf) (Task ta) = Task $ \bC xC ref -> tf (\f -> ta (bC <. f) xC ref) xC ref
+  apply (Task tf) (Task ta) = Task \bC xC ref -> tf (\f -> ta (bC <. f) xC ref) xC ref
 
 instance applicativeTask :: Applicative (Task x) where
   pure a = Task \aC _ _ -> aC a
@@ -56,7 +56,7 @@ instance bifunctorTask :: Bifunctor Task where
   bimap lmap rmap task = task <#> rmap # mapError lmap
 
 instance monadEffectTask :: MonadEffect (Task x) where
-  liftEffect aEff = Task $ \aC _ _ -> aEff >>= aC
+  liftEffect aEff = Task \aC _ _ -> aEff >>= aC
 
 newtype ParTask x a
   = ParTask (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
@@ -66,49 +66,48 @@ instance functorParTask :: Functor (ParTask x) where
 
 instance applyParTask :: Apply (ParTask x) where
   apply (ParTask tf) (ParTask ta) =
-    ParTask
-      $ \bC xC ref -> do
-          fRef <- Ref.new Nothing
-          fErrorRef <- Ref.new false
-          fCancelerRef <- Ref.new $ pure unit
-          aRef <- Ref.new Nothing
-          aErrorRef <- Ref.new false
-          aCancelerRef <- Ref.new $ pure unit
-          let
-            errorCallback :: Ref Boolean -> Ref Boolean -> Callback x
-            errorCallback myErrorRef otherErrorRef x = do
-              otherError <- Ref.read otherErrorRef
-              if otherError then
-                pure unit
-              else do
-                join $ Ref.read fCancelerRef
-                join $ Ref.read aCancelerRef
-                Ref.write true myErrorRef
-                xC x
-          tf
-            ( \f -> do
-                ma <- Ref.read aRef
-                case ma of
-                  Just a -> bC $ f a
-                  Nothing -> Ref.write (Just f) fRef
-            )
-            (errorCallback fErrorRef aErrorRef)
-            fCancelerRef
-          ta
-            ( \a -> do
-                mf <- Ref.read fRef
-                case mf of
-                  Just f -> bC $ f a
-                  Nothing -> Ref.write (Just a) aRef
-            )
-            (errorCallback aErrorRef fErrorRef)
-            aCancelerRef
-          Ref.write
-            ( do
-                join $ Ref.read fCancelerRef
-                join $ Ref.read aCancelerRef
-            )
-            ref
+    ParTask \bC xC ref -> do
+      fRef <- Ref.new Nothing
+      fErrorRef <- Ref.new false
+      fCancelerRef <- Ref.new $ pure unit
+      aRef <- Ref.new Nothing
+      aErrorRef <- Ref.new false
+      aCancelerRef <- Ref.new $ pure unit
+      let
+        errorCallback :: Ref Boolean -> Ref Boolean -> Callback x
+        errorCallback myErrorRef otherErrorRef x = do
+          otherError <- Ref.read otherErrorRef
+          if otherError then
+            pure unit
+          else do
+            join $ Ref.read fCancelerRef
+            join $ Ref.read aCancelerRef
+            Ref.write true myErrorRef
+            xC x
+      tf
+        ( \f -> do
+            ma <- Ref.read aRef
+            case ma of
+              Just a -> bC $ f a
+              Nothing -> Ref.write (Just f) fRef
+        )
+        (errorCallback fErrorRef aErrorRef)
+        fCancelerRef
+      ta
+        ( \a -> do
+            mf <- Ref.read fRef
+            case mf of
+              Just f -> bC $ f a
+              Nothing -> Ref.write (Just a) aRef
+        )
+        (errorCallback aErrorRef fErrorRef)
+        aCancelerRef
+      Ref.write
+        ( do
+            join $ Ref.read fCancelerRef
+            join $ Ref.read aCancelerRef
+        )
+        ref
 
 instance applicativePartask :: Applicative (ParTask x) where
   pure a = ParTask \aC _ _ -> aC a
