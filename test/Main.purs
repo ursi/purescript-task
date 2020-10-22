@@ -47,7 +47,8 @@ main = do
     <$> [ 500, 500, 500 ]
   testDelayLeft "parallel delay with failure" 500
     $ parSequence
-    $ [ wait 750
+    $ [ wait 700
+      , wait 600
       , wait 500 *> Task.fail unit
       ]
   assertLeft
@@ -63,13 +64,13 @@ main = do
     $ ((*>) (wait 500) <. Task.fail)
     <$> [ 1, 2, 3 ]
   assertLeft
-    "error callback is called only once (parallel, sync)"
+    "ParTask error callback is called only once (sync)"
     (eq 1)
     $ parSequence
     $ Task.fail
     <$> [ 1, 2, 3 ]
   assertLeft
-    "error callback is called only once (parallel, async)"
+    "ParTask error callback is called only once (async)"
     (eq 2)
     $ parSequence
     $ [ wait 750 *> Task.fail 1
@@ -77,7 +78,7 @@ main = do
       , wait 750 *> Task.fail 3
       ]
   assertLeft
-    "error callback is called only once (parallel, mixed)"
+    "ParTask error callback is called only once (mixed)"
     (eq 2)
     $ parSequence
     $ [ wait 500 *> Task.fail 1
