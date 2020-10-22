@@ -21,6 +21,9 @@ main = do
     one <- pure 1
     two <- pure 2
     pure $ one + two
+  assertRight "alt (succeed)" (eq 1) $ pure 1 <|> pure 2 <|> pure 3
+  assertRight "alt (mixed)" identity $ Task.fail false <|> Task.fail false <|> pure true
+  assertLeft "alt (fail)" (eq 3) $ Task.fail 1 <|> Task.fail 2 <|> Task.fail 3
   assertRight "append" (eq "ab") $ pure "a" <> pure "b"
   assertRight "mempty" (eq "ab") $ pure "a" <> mempty <> pure "b"
   assertLeft "lmap" (eq 3) $ lmap (add 1) $ Task.fail 2
