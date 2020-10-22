@@ -3,7 +3,6 @@ module Test.Main where
 import MasonPrelude
 import Control.Parallel (parallel, sequential)
 import Data.Bifunctor (lmap, rmap)
-import Effect.Class.Console (log)
 import Effect.Timer (clearTimeout, setTimeout)
 import Task (Promise, Task)
 import Task as Task

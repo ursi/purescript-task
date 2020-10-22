@@ -15,7 +15,6 @@ module Task
   ) where
 
 import MasonPrelude
-import Control.Alt (class Alt)
 import Control.Parallel (class Parallel)
 import Data.Bifunctor (class Bifunctor)
 import Data.Newtype (class Newtype, unwrap)
