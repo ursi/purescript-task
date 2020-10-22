@@ -77,14 +77,13 @@ instance applyParTask :: Apply (ParTask x) where
       aErrorRef <- Ref.new false
       aCancellerRef <- Ref.new $ pure unit
       let
-        errorCallback :: Ref Boolean -> Ref Boolean -> Callback x
-        errorCallback myErrorRef otherErrorRef x = do
+        errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback x
+        errorCallback myErrorRef otherErrorRef otherCanceller x = do
           otherError <- Ref.read otherErrorRef
           if otherError then
             pure unit
           else do
-            join $ Ref.read fCancellerRef
-            join $ Ref.read aCancellerRef
+            join $ Ref.read otherCanceller
             Ref.write true myErrorRef
             xC x
       tf
@@ -94,7 +93,7 @@ instance applyParTask :: Apply (ParTask x) where
               Just a -> bC $ f a
               Nothing -> Ref.write (Just f) fRef
         )
-        (errorCallback fErrorRef aErrorRef)
+        (errorCallback fErrorRef aErrorRef aCancellerRef)
         fCancellerRef
       ta
         ( \a -> do
@@ -103,7 +102,7 @@ instance applyParTask :: Apply (ParTask x) where
               Just f -> bC $ f a
               Nothing -> Ref.write (Just a) aRef
         )
-        (errorCallback aErrorRef fErrorRef)
+        (errorCallback aErrorRef fErrorRef fCancellerRef)
         aCancellerRef
       Ref.write
         ( do
