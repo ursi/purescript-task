@@ -175,7 +175,7 @@ testDelayRight desc ms task = do
         Right a -> do
           t' <- now
           let
-            b = t' - t >= ms
+            b = between ms (ms + 10) $ t' - t
           status b desc
           assert $ b
         Left _ -> do
@@ -195,7 +195,7 @@ testDelayLeft desc ms task = do
         Left x -> do
           t' <- now
           let
-            b = t' - t >= ms
+            b = between ms (ms + 10) $ t' - t
           status b desc
           assert $ b
     )
