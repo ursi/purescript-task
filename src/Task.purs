@@ -15,6 +15,7 @@ module Task
   ) where
 
 import MasonPrelude
+import Control.Alt (class Alt)
 import Control.Parallel (class Parallel)
 import Data.Bifunctor (class Bifunctor)
 import Data.Newtype (class Newtype, unwrap)
@@ -45,6 +46,9 @@ instance bindTask :: Bind (Task x) where
   bind (Task ta) f = Task \bC xC ref -> ta (\a -> unwrap (f a) bC xC ref) xC ref
 
 instance monadTask :: Monad (Task x)
+
+instance altTask :: Alt (Task x) where
+  alt = bindError <~. const
 
 instance semigroupTask :: Semigroup a => Semigroup (Task x a) where
   append = lift2 append
