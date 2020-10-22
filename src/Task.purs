@@ -114,6 +114,52 @@ instance applyParTask :: Apply (ParTask x) where
 instance applicativePartask :: Applicative (ParTask x) where
   pure a = ParTask \aC _ _ -> aC a
 
+instance altParTask :: Alt (ParTask x) where
+  alt = alt
+
+alt :: ∀ a x. ParTask x a -> ParTask x a -> ParTask x a
+alt (ParTask t1) (ParTask t2) =
+  ParTask \aC xC ref -> do
+    t1Ref <- Ref.new false
+    t1ErrorRef <- Ref.new false
+    t1CancellerRef <- Ref.new $ pure unit
+    t2Ref <- Ref.new false
+    t2ErrorRef <- Ref.new false
+    t2CancellerRef <- Ref.new $ pure unit
+    let
+      successCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback a
+      successCallback myARef otherARef otherCancellerRef a = do
+        otherA <- Ref.read otherARef
+        if otherA then
+          pure unit
+        else do
+          join $ Ref.read otherCancellerRef
+          Ref.write true myARef
+          aC a
+
+      errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback x
+      errorCallback myErrorRef otherErrorRef otherCancellerRef x = do
+        otherError <- Ref.read otherErrorRef
+        if otherError then do
+          join $ Ref.read otherCancellerRef
+          xC x
+        else
+          Ref.write true myErrorRef
+    t1
+      (successCallback t1Ref t2Ref t2CancellerRef)
+      (errorCallback t1ErrorRef t2ErrorRef t2CancellerRef)
+      t1CancellerRef
+    t2
+      (successCallback t2Ref t1Ref t1CancellerRef)
+      (errorCallback t2ErrorRef t1ErrorRef t1CancellerRef)
+      t2CancellerRef
+    Ref.write
+      ( do
+          join $ Ref.read t1CancellerRef
+          join $ Ref.read t2CancellerRef
+      )
+      ref
+
 instance parallelTask :: Parallel (ParTask x) (Task x) where
   parallel (Task t) = ParTask t
   sequential (ParTask p) = Task p
