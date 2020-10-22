@@ -88,6 +88,7 @@ main = do
       assertLeft desc identity
         $ parSequence
             [ cancelableWait 500 *> throw desc
+            , cancelableWait 500 *> throw desc
             , Task.fail true
             ]
   )
@@ -97,6 +98,7 @@ main = do
       assertLeft desc identity
         $ parSequence
             [ cancelableWait 750 *> throw desc
+            , cancelableWait 750 *> throw desc
             , wait 500 *> Task.fail true
             ]
   )
