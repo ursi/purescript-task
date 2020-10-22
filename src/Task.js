@@ -1,10 +1,6 @@
-exports.fromPromiseImpl = makeTask => effectUnit => effectPromise => {
-	return makeTask(aC => xC => () => {
-		effectPromise().then(
-			a => aC(a)(),
-			x => xC(x)()
-		);
-
+exports.fromPromiseImpl = fromForiegn => effectUnit => effectPromise => {
+	return fromForiegn(aC => xC => () => {
+		effectPromise().then(aC, xC);
 		return effectUnit;
 	});
 };

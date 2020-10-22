@@ -141,13 +141,13 @@ foreign import data Promise :: Type -> Type -> Type
 
 foreign import fromPromiseImpl ::
   ∀ a x.
-  (∀ b y. (Callback b -> Callback y -> Effect Canceler) -> Task y b) ->
+  (∀ b y. (ForeignCallback b -> ForeignCallback y -> Effect Canceler) -> Task y b) ->
   Effect Unit ->
   Effect (Promise x a) ->
   Task x a
 
 fromPromise :: ∀ x a. Effect (Promise x a) -> Task x a
-fromPromise = fromPromiseImpl makeTask $ pure unit
+fromPromise = fromPromiseImpl fromForeign $ pure unit
 
 type ForeignCallback a
   = EffectFn1 a Unit
