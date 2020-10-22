@@ -146,7 +146,6 @@ assertRight desc tester =
   Task.capture
     ( case _ of
         Right a -> do
-          -- logShow $ Debug.taggedLog "debug" a
           let
             b = tester a
           status b desc
