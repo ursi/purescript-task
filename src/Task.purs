@@ -127,7 +127,7 @@ fail x = Task \_ xC _ -> xC x
 bindError :: ∀ a x y. Task x a -> (x -> Task y a) -> Task y a
 bindError (Task tx) f = Task \aC yC ref -> tx aC (\x -> unwrap (f x) aC yC ref) ref
 
-capture :: ∀ a x. (Either x a -> Effect Unit) -> Task x a -> Effect Unit
+capture :: ∀ a x. (x \/ a -> Effect Unit) -> Task x a -> Effect Unit
 capture handler (Task t) = do
   ref <- Ref.new $ pure unit
   t (handler <. Right) (handler <. Left) ref
