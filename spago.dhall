@@ -1,4 +1,4 @@
-let testDependencies = [ "assert", "js-timers" ]
+let testDependencies = [ "ansi", "assert", "js-timers" ]
 
 in  { name = "task"
     , dependencies = [ "mason-prelude" ] # testDependencies

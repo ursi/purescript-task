@@ -1,6 +1,8 @@
 module Test.Main where
 
 import MasonPrelude
+import Ansi.Codes (Color(..))
+import Ansi.Output (withGraphics, foreground)
 import Control.Parallel (parallel, sequential)
 import Data.Bifunctor (lmap, rmap)
 import Effect.Timer (clearTimeout, setTimeout)
@@ -126,9 +128,15 @@ throw = liftEffect <. throwImpl
 status :: Boolean -> String -> Effect Unit
 status bool str =
   if bool then
-    log $ "✓ " <> str
+    log $ green "✓ " <> str
   else
-    log $ "✗ " <> str
+    log $ red "✗ " <> str
+
+green :: String -> String
+green = withGraphics $ foreground Green
+
+red :: String -> String
+red = withGraphics $ foreground Red
 
 assertRight :: ∀ x a. Show a => String -> (a -> Boolean) -> Task x a -> Effect Unit
 assertRight desc tester =
