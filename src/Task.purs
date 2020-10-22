@@ -4,7 +4,7 @@ module Task
   , ParTask
   , Promise
   , Task(..)
-  , Canceler
+  , Canceller
   , bindError
   , capture
   , fail
@@ -24,11 +24,11 @@ import Effect.Ref as Ref
 type Callback a
   = a -> Effect Unit
 
-type Canceler
+type Canceller
   = Effect Unit
 
 newtype Task x a
-  = Task (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
+  = Task (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
 derive instance newtypeTask :: Newtype (Task x a) _
 
@@ -62,7 +62,7 @@ instance monadEffectTask :: MonadEffect (Task x) where
   liftEffect aEff = Task \aC _ _ -> aEff >>= aC
 
 newtype ParTask x a
-  = ParTask (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
+  = ParTask (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
 instance functorParTask :: Functor (ParTask x) where
   map f (ParTask t) = ParTask $ t <. (.>) f
@@ -72,10 +72,10 @@ instance applyParTask :: Apply (ParTask x) where
     ParTask \bC xC ref -> do
       fRef <- Ref.new Nothing
       fErrorRef <- Ref.new false
-      fCancelerRef <- Ref.new $ pure unit
+      fCancellerRef <- Ref.new $ pure unit
       aRef <- Ref.new Nothing
       aErrorRef <- Ref.new false
-      aCancelerRef <- Ref.new $ pure unit
+      aCancellerRef <- Ref.new $ pure unit
       let
         errorCallback :: Ref Boolean -> Ref Boolean -> Callback x
         errorCallback myErrorRef otherErrorRef x = do
@@ -83,8 +83,8 @@ instance applyParTask :: Apply (ParTask x) where
           if otherError then
             pure unit
           else do
-            join $ Ref.read fCancelerRef
-            join $ Ref.read aCancelerRef
+            join $ Ref.read fCancellerRef
+            join $ Ref.read aCancellerRef
             Ref.write true myErrorRef
             xC x
       tf
@@ -95,7 +95,7 @@ instance applyParTask :: Apply (ParTask x) where
               Nothing -> Ref.write (Just f) fRef
         )
         (errorCallback fErrorRef aErrorRef)
-        fCancelerRef
+        fCancellerRef
       ta
         ( \a -> do
             mf <- Ref.read fRef
@@ -104,11 +104,11 @@ instance applyParTask :: Apply (ParTask x) where
               Nothing -> Ref.write (Just a) aRef
         )
         (errorCallback aErrorRef fErrorRef)
-        aCancelerRef
+        aCancellerRef
       Ref.write
         ( do
-            join $ Ref.read fCancelerRef
-            join $ Ref.read aCancelerRef
+            join $ Ref.read fCancellerRef
+            join $ Ref.read aCancellerRef
         )
         ref
 
@@ -136,14 +136,14 @@ capture handler (Task t) = do
 run :: ∀ a x. Task x a -> Effect Unit
 run = capture $ const $ pure unit
 
-makeTask :: ∀ a x. (Callback a -> Callback x -> Effect Canceler) -> Task x a
+makeTask :: ∀ a x. (Callback a -> Callback x -> Effect Canceller) -> Task x a
 makeTask f = Task \aC xC ref -> f aC xC >>= Ref.write ~$ ref
 
 foreign import data Promise :: Type -> Type -> Type
 
 foreign import fromPromiseImpl ::
   ∀ a x.
-  (∀ b y. (ForeignCallback b -> ForeignCallback y -> Effect Canceler) -> Task y b) ->
+  (∀ b y. (ForeignCallback b -> ForeignCallback y -> Effect Canceller) -> Task y b) ->
   Effect Unit ->
   Effect (Promise x a) ->
   Task x a
@@ -156,6 +156,6 @@ type ForeignCallback a
 
 fromForeign ::
   ∀ x a.
-  (ForeignCallback a -> ForeignCallback x -> Effect Canceler) ->
+  (ForeignCallback a -> ForeignCallback x -> Effect Canceller) ->
   Task x a
 fromForeign f = Task \aC xC ref -> f (mkEffectFn1 aC) (mkEffectFn1 xC) >>= Ref.write ~$ ref
