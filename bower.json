@@ -1,0 +1,19 @@
+{
+    "name": "purescript-task",
+    "license": [
+        "BSD-3-Clause"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ursi/purescript-task.git"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-mason-prelude": "ursi/purescript-mason-prelude#^v0.4.0"
+    }
+}
