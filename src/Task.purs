@@ -67,6 +67,8 @@ instance monadEffectTask :: MonadEffect (Task x) where
 -- | ParTask is the applicative that lets you run tasks in parallel via the [parallel](https://pursuit.purescript.org/packages/purescript-parallel) library.
 -- |
 -- | You may not need to work with any `ParTask` values directly. One of the most useful functions [parSequence](https://pursuit.purescript.org/packages/purescript-parallel/docs/Control.Parallel#v:parSequence), which can take an array of `Task x a` and executes them all in parallel, returning a `Task x (Array a)`.
+-- |
+-- | If tasks are executing in parallel via `ParTask`'s `Apply` instance (as is the case with `parSequence`), when one of them fails, the cancellers are called for all the task that are currently running.
 newtype ParTask x a
   = ParTask (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
