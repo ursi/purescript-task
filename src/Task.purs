@@ -3,7 +3,7 @@ module Task
   , run
   , Callback
   , capture
-  , Canceller
+  , Canceler
   , makeTask
   , fail
   , bindError
@@ -24,15 +24,15 @@ type Callback a
   = a -> Effect Unit
 
 -- | This type alias is used to show the `Effect Unit` should be used to cancel a task. see `makeTask` for an example.
-type Canceller
+type Canceler
   = Effect Unit
 
 -- | A `Task x a` represents an asynchronous computation that can either succeed with a value of type `a`, or fail with a value of type `x`.
 newtype Task x a
-  = Task (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
+  = Task (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
 
 -- this is used instead of a Newtype instance to keep Task opaque
-unwrap :: ∀ x a. Task x a -> (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
+unwrap :: ∀ x a. Task x a -> (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
 unwrap (Task t) = t
 
 instance functorTask :: Functor (Task x) where
@@ -68,9 +68,9 @@ instance monadEffectTask :: MonadEffect (Task x) where
 -- |
 -- | You may not need to work with any `ParTask` values directly. One of the most useful functions [parSequence](https://pursuit.purescript.org/packages/purescript-parallel/docs/Control.Parallel#v:parSequence), which can take an array of `Task x a` and executes them all in parallel, returning a `Task x (Array a)`.
 -- |
--- | If tasks are executing in parallel via `ParTask`'s `Apply` instance (as is the case with `parSequence`), when one of them fails, the cancellers are called for all the task that are currently running.
+-- | If tasks are executing in parallel via `ParTask`'s `Apply` instance (as is the case with `parSequence`), when one of them fails, the cancelers are called for all the task that are currently running.
 newtype ParTask x a
-  = ParTask (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
+  = ParTask (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
 
 instance functorParTask :: Functor (ParTask x) where
   map f (ParTask t) = ParTask $ t <. (.>) f
@@ -80,18 +80,18 @@ instance applyParTask :: Apply (ParTask x) where
     ParTask \bC xC ref -> do
       fRef <- Ref.new Nothing
       fErrorRef <- Ref.new false
-      fCancellerRef <- Ref.new $ pure unit
+      fCancelerRef <- Ref.new $ pure unit
       aRef <- Ref.new Nothing
       aErrorRef <- Ref.new false
-      aCancellerRef <- Ref.new $ pure unit
+      aCancelerRef <- Ref.new $ pure unit
       let
-        errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback x
-        errorCallback myErrorRef otherErrorRef otherCanceller x = do
+        errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceler -> Callback x
+        errorCallback myErrorRef otherErrorRef otherCanceler x = do
           otherError <- Ref.read otherErrorRef
           if otherError then
             pure unit
           else do
-            join $ Ref.read otherCanceller
+            join $ Ref.read otherCanceler
             Ref.write true myErrorRef
             xC x
       tf
@@ -101,8 +101,8 @@ instance applyParTask :: Apply (ParTask x) where
               Just a -> bC $ f a
               Nothing -> Ref.write (Just f) fRef
         )
-        (errorCallback fErrorRef aErrorRef aCancellerRef)
-        fCancellerRef
+        (errorCallback fErrorRef aErrorRef aCancelerRef)
+        fCancelerRef
       ta
         ( \a -> do
             mf <- Ref.read fRef
@@ -110,12 +110,12 @@ instance applyParTask :: Apply (ParTask x) where
               Just f -> bC $ f a
               Nothing -> Ref.write (Just a) aRef
         )
-        (errorCallback aErrorRef fErrorRef fCancellerRef)
-        aCancellerRef
+        (errorCallback aErrorRef fErrorRef fCancelerRef)
+        aCancelerRef
       Ref.write
         ( do
-            join $ Ref.read fCancellerRef
-            join $ Ref.read aCancellerRef
+            join $ Ref.read fCancelerRef
+            join $ Ref.read aCancelerRef
         )
         ref
 
@@ -130,41 +130,41 @@ alt (ParTask t1) (ParTask t2) =
   ParTask \aC xC ref -> do
     t1Ref <- Ref.new false
     t1ErrorRef <- Ref.new false
-    t1CancellerRef <- Ref.new $ pure unit
+    t1CancelerRef <- Ref.new $ pure unit
     t2Ref <- Ref.new false
     t2ErrorRef <- Ref.new false
-    t2CancellerRef <- Ref.new $ pure unit
+    t2CancelerRef <- Ref.new $ pure unit
     let
-      successCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback a
-      successCallback myARef otherARef otherCancellerRef a = do
+      successCallback :: Ref Boolean -> Ref Boolean -> Ref Canceler -> Callback a
+      successCallback myARef otherARef otherCancelerRef a = do
         otherA <- Ref.read otherARef
         if otherA then
           pure unit
         else do
-          join $ Ref.read otherCancellerRef
+          join $ Ref.read otherCancelerRef
           Ref.write true myARef
           aC a
 
-      errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceller -> Callback x
-      errorCallback myErrorRef otherErrorRef otherCancellerRef x = do
+      errorCallback :: Ref Boolean -> Ref Boolean -> Ref Canceler -> Callback x
+      errorCallback myErrorRef otherErrorRef otherCancelerRef x = do
         otherError <- Ref.read otherErrorRef
         if otherError then do
-          join $ Ref.read otherCancellerRef
+          join $ Ref.read otherCancelerRef
           xC x
         else
           Ref.write true myErrorRef
     t1
-      (successCallback t1Ref t2Ref t2CancellerRef)
-      (errorCallback t1ErrorRef t2ErrorRef t2CancellerRef)
-      t1CancellerRef
+      (successCallback t1Ref t2Ref t2CancelerRef)
+      (errorCallback t1ErrorRef t2ErrorRef t2CancelerRef)
+      t1CancelerRef
     t2
-      (successCallback t2Ref t1Ref t1CancellerRef)
-      (errorCallback t2ErrorRef t1ErrorRef t1CancellerRef)
-      t2CancellerRef
+      (successCallback t2Ref t1Ref t1CancelerRef)
+      (errorCallback t2ErrorRef t1ErrorRef t1CancelerRef)
+      t2CancelerRef
     Ref.write
       ( do
-          join $ Ref.read t1CancellerRef
-          join $ Ref.read t2CancellerRef
+          join $ Ref.read t1CancelerRef
+          join $ Ref.read t2CancelerRef
       )
       ref
 
@@ -202,7 +202,7 @@ run = capture $ const $ pure unit
 -- |     id <- setTimeout ms $ aC unit
 -- |     pure $ clearTimeout id
 -- | ```
-makeTask :: ∀ a x. (Callback a -> Callback x -> Effect Canceller) -> Task x a
+makeTask :: ∀ a x. (Callback a -> Callback x -> Effect Canceler) -> Task x a
 makeTask f = Task \aC xC ref -> f aC xC >>= Ref.write ~$ ref
 
 -- | A type that represents JavaScript promises. Use this with the FFI and `fromPromise` to turn promises into tasks.
@@ -214,7 +214,7 @@ foreign import data Promise :: Type -> Type -> Type
 
 foreign import fromPromiseImpl ::
   ∀ a x.
-  (∀ b y. (ForeignCallback b -> ForeignCallback y -> Effect Canceller) -> Task y b) ->
+  (∀ b y. (ForeignCallback b -> ForeignCallback y -> Effect Canceler) -> Task y b) ->
   Effect Unit ->
   Effect (Promise x a) ->
   Task x a
@@ -241,13 +241,13 @@ type ForeignCallback a
 -- | };
 -- |
 -- | -- PureScript
--- | foreign import waitImpl :: Int -> ForeignCallback Unit -> Effect Canceller
+-- | foreign import waitImpl :: Int -> ForeignCallback Unit -> Effect Canceler
 -- |
 -- | wait :: ∀ x. Int -> Task x Unit
 -- | wait ms = fromForeign \cb _ -> waitImpl ms cb
 -- | ```
 fromForeign ::
   ∀ x a.
-  (ForeignCallback a -> ForeignCallback x -> Effect Canceller) ->
+  (ForeignCallback a -> ForeignCallback x -> Effect Canceler) ->
   Task x a
 fromForeign f = Task \aC xC ref -> f (mkEffectFn1 aC) (mkEffectFn1 xC) >>= Ref.write ~$ ref
