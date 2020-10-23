@@ -1,17 +1,17 @@
 module Task
-  ( Callback
-  , ForeignCallback
-  , ParTask
-  , Promise
-  , Task
-  , Canceller
-  , bindError
-  , capture
-  , fail
-  , fromForeign
-  , fromPromise
-  , makeTask
+  ( Task
   , run
+  , Callback
+  , capture
+  , Canceller
+  , makeTask
+  , fail
+  , bindError
+  , ForeignCallback
+  , fromForeign
+  , Promise
+  , fromPromise
+  , ParTask
   ) where
 
 import MasonPrelude
