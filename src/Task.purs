@@ -23,9 +23,11 @@ import Effect.Ref as Ref
 type Callback a
   = a -> Effect Unit
 
+-- | This type alias is used to show the `Effect Unit` should be used to cancel a task. see `makeTask` for an example.
 type Canceller
   = Effect Unit
 
+-- | A `Task x a` represents an asynchronous computation that can either succeed with a value of type `a`, or fail with a value of type `x`.
 newtype Task x a
   = Task (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
@@ -62,6 +64,9 @@ instance bifunctorTask :: Bifunctor Task where
 instance monadEffectTask :: MonadEffect (Task x) where
   liftEffect aEff = Task \aC _ _ -> aEff >>= aC
 
+-- | ParTask is the applicative that lets you run tasks in parallel via the [parallel](https://pursuit.purescript.org/packages/purescript-parallel) library.
+-- |
+-- | You may not need to work with any `ParTask` values directly. One of the most useful functions [parSequence](https://pursuit.purescript.org/packages/purescript-parallel/docs/Control.Parallel#v:parSequence), which can take an array of `Task x a` and executes them all in parallel, returning a `Task x (Array a)`.
 newtype ParTask x a
   = ParTask (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
@@ -174,17 +179,35 @@ fail x = Task \_ xC _ -> xC x
 bindError :: ∀ a x y. Task x a -> (x -> Task y a) -> Task y a
 bindError (Task tx) f = Task \aC yC ref -> tx aC (\x -> unwrap (f x) aC yC ref) ref
 
+-- | Execute a task, capturing the result with an effectual function.
 capture :: ∀ a x. Callback (x \/ a) -> Task x a -> Effect Unit
 capture handler (Task t) = do
   ref <- Ref.new $ pure unit
   t (handler <. Right) (handler <. Left) ref
 
+-- | Execute a task, disregarding its result.
 run :: ∀ a x. Task x a -> Effect Unit
 run = capture $ const $ pure unit
 
+-- | To use `makeTask`, you need to create a function that takes a callback for both success and failure, and returns an effect that will cancel a task in the event of an error during parallel execution. If you do not need or do not care about cancelling a task, you can use `pure $ pure unit`.
+-- |
+-- | Here is how you would make a simple waiting task using [js-timers](https://pursuit.purescript.org/packages/purescript-js-timers):
+-- |
+-- | ```
+-- | wait :: ∀ x. Int -> Task x Unit
+-- | wait ms =
+-- |   makeTask \aC _ -> do
+-- |     id <- setTimeout ms $ aC unit
+-- |     pure $ clearTimeout id
+-- | ```
 makeTask :: ∀ a x. (Callback a -> Callback x -> Effect Canceller) -> Task x a
 makeTask f = Task \aC xC ref -> f aC xC >>= Ref.write ~$ ref
 
+-- | A type that represents JavaScript promises. Use this with the FFI and `fromPromise` to turn promises into tasks.
+-- |
+-- | ```
+-- | foreign import fetchImpl :: String -> Effect (Promise Error Json)
+-- | ```
 foreign import data Promise :: Type -> Type -> Type
 
 foreign import fromPromiseImpl ::
@@ -194,12 +217,33 @@ foreign import fromPromiseImpl ::
   Effect (Promise x a) ->
   Task x a
 
+-- | A convenience function for creating tasks from JavaScript promises.
+-- |
+-- | ```
+-- | fetch :: String -> Task Error Json
+-- | fetch = fromPromise <<< fetchImpl
+-- | ```
 fromPromise :: ∀ x a. Effect (Promise x a) -> Task x a
 fromPromise = fromPromiseImpl fromForeign $ pure unit
 
 type ForeignCallback a
   = EffectFn1 a Unit
 
+-- | A convenience function for creating tasks from JavaScript functions that take callbacks.
+-- |
+-- | ```
+-- | // JavaScript
+-- | exports.waitImpl = ms => cb => () => {
+-- |     const id = setTimeout(cb, ms);
+-- |     return () => clearTimeout(id);
+-- | };
+-- |
+-- | -- PureScript
+-- | foreign import waitImpl :: Int -> ForeignCallback Unit -> Effect Canceller
+-- |
+-- | wait :: ∀ x. Int -> Task x Unit
+-- | wait ms = fromForeign \cb _ -> waitImpl ms cb
+-- | ```
 fromForeign ::
   ∀ x a.
   (ForeignCallback a -> ForeignCallback x -> Effect Canceller) ->
