@@ -3,7 +3,7 @@ module Task
   , ForeignCallback
   , ParTask
   , Promise
-  , Task(..)
+  , Task
   , Canceller
   , bindError
   , capture
@@ -17,7 +17,6 @@ module Task
 import MasonPrelude
 import Control.Parallel (class Parallel)
 import Data.Bifunctor (class Bifunctor)
-import Data.Newtype (class Newtype, unwrap)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
@@ -30,7 +29,9 @@ type Canceller
 newtype Task x a
   = Task (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
 
-derive instance newtypeTask :: Newtype (Task x a) _
+-- this is used instead of a Newtype instance to keep Task opaque
+unwrap :: ∀ x a. Task x a -> (Callback a -> Callback x -> Ref Canceller -> Effect Unit)
+unwrap (Task t) = t
 
 instance functorTask :: Functor (Task x) where
   map f (Task t) = Task $ t <. (.>) f
