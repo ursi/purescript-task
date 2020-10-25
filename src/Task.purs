@@ -5,20 +5,22 @@ module Task
   , capture
   , Canceler
   , makeTask
-  , fail
   , bindError
   , ForeignCallback
   , fromForeign
   , Promise
   , fromPromise
   , ParTask
+  , module Exports
   ) where
 
 import MasonPrelude
 import Control.Parallel (class Parallel)
+import Control.Monad.Error.Class (class MonadThrow)
 import Data.Bifunctor (class Bifunctor)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Control.Monad.Error.Class (throwError) as Exports
 
 type Callback a
   = a -> Effect Unit
@@ -63,6 +65,9 @@ instance bifunctorTask :: Bifunctor Task where
 
 instance monadEffectTask :: MonadEffect (Task x) where
   liftEffect aEff = Task \aC _ _ -> aEff >>= aC
+
+instance monadThrowTask :: MonadThrow x (Task x) where
+  throwError x = Task \_ xC _ -> xC x
 
 -- | ParTask is the applicative that lets you run tasks in parallel via the [parallel](https://pursuit.purescript.org/packages/purescript-parallel) library.
 -- |
@@ -174,9 +179,6 @@ instance parallelTask :: Parallel (ParTask x) (Task x) where
 
 mapError :: ∀ a x y. (x -> y) -> Task x a -> Task y a
 mapError f (Task t) = Task $ t <~. (.>) f
-
-fail :: ∀ a x. x -> Task x a
-fail x = Task \_ xC _ -> xC x
 
 bindError :: ∀ a x y. Task x a -> (x -> Task y a) -> Task y a
 bindError (Task tx) f = Task \aC yC ref -> tx aC (\x -> unwrap (f x) aC yC ref) ref
