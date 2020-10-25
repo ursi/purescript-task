@@ -16,7 +16,7 @@ module Task
 
 import MasonPrelude
 import Control.Parallel (class Parallel)
-import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Data.Bifunctor (class Bifunctor)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
@@ -69,6 +69,9 @@ instance monadEffectTask :: MonadEffect (Task x) where
 
 instance monadThrowTask :: MonadThrow x (Task x) where
   throwError x = Task \_ xC _ -> xC x
+
+instance monadErrorTask :: MonadError x (Task x) where
+  catchError task f = bindError task f
 
 -- | ParTask is the applicative that lets you run tasks in parallel via the [parallel](https://pursuit.purescript.org/packages/purescript-parallel) library.
 -- |
