@@ -21,6 +21,7 @@ import Data.Bifunctor (class Bifunctor)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Control.Monad.Error.Class (throwError) as Exports
+import Data.Bifunctor (lmap) as Exports
 
 type Callback a
   = a -> Effect Unit
