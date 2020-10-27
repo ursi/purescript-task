@@ -26,11 +26,13 @@ import Data.Bifunctor (lmap) as Exports
 type Callback a
   = a -> Effect Unit
 
--- | This type alias is used to show the `Effect Unit` should be used to cancel a task. see `makeTask` for an example.
+-- | This type alias is used to show the `Effect Unit` should be used to cancel a task. See `makeTask` for an example.
 type Canceler
   = Effect Unit
 
 -- | A `Task x a` represents an asynchronous computation that can either succeed with a value of type `a`, or fail with a value of type `x`.
+-- |
+-- | If you're coming from Elm and it seems like a lot of the functions are missing, that's because their equivalents are hiding in the type class instances. They have been annotated below.
 newtype Task x a
   = Task (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
 
@@ -38,15 +40,22 @@ newtype Task x a
 unwrap :: ∀ x a. Task x a -> (Callback a -> Callback x -> Ref Canceler -> Effect Unit)
 unwrap (Task t) = t
 
+-- | `Task.map` -> `map`
 instance functorTask :: Functor (Task x) where
   map f (Task t) = Task $ t <. (.>) f
 
 instance applyTask :: Apply (Task x) where
   apply (Task tf) (Task ta) = Task \bC xC ref -> tf (\f -> ta (bC <. f) xC ref) xC ref
 
+-- | `Task.succeed` -> `pure`
+-- |
+-- | `Task.mapN` -> `liftN`
+-- |
+-- | `Task.sequence` -> For this, we use the `sequence` function that is a member of the [Traversable](https://pursuit.purescript.org/packages/purescript-foldable-traversable/docs/Data.Traversable#t:Traversable) type class. Note: we are not using a `Traversable` instance of `Task`, we're using the `Traversable` instance of whatever we want to sequence over. So while Elm's `Task.sequence` only works over `List`s, we can sequence over anything that has a `Traversable` instance.
 instance applicativeTask :: Applicative (Task x) where
   pure a = Task \aC _ _ -> aC a
 
+-- | `Task.andThen` -> `bind` (the only difference is the order of the arguments)
 instance bindTask :: Bind (Task x) where
   bind (Task ta) f = Task \bC xC ref -> ta (\a -> unwrap (f a) bC xC ref) xC ref
 
@@ -61,12 +70,14 @@ instance semigroupTask :: Semigroup a => Semigroup (Task x a) where
 instance monoidTask :: Monoid a => Monoid (Task x a) where
   mempty = pure mempty
 
+-- | `Task.mapError`: `lmap`, which isn't a member of `Bifunctor` directly, but uses the `Bifunctor` instance.
 instance bifunctorTask :: Bifunctor Task where
   bimap lmap rmap task = task <#> rmap # mapError lmap
 
 instance monadEffectTask :: MonadEffect (Task x) where
   liftEffect aEff = Task \aC _ _ -> aEff >>= aC
 
+-- | `Task.fail` -> `throwError`
 instance monadThrowTask :: MonadThrow x (Task x) where
   throwError x = Task \_ xC _ -> xC x
 
