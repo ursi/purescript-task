@@ -44,12 +44,11 @@ unwrap (Task t) = t
 instance functorTask :: Functor (Task x) where
   map f (Task t) = Task $ t <. (.>) f
 
+-- | `Task.mapN` -> `liftN`
 instance applyTask :: Apply (Task x) where
   apply (Task tf) (Task ta) = Task \bC xC ref -> tf (\f -> ta (bC <. f) xC ref) xC ref
 
 -- | `Task.succeed` -> `pure`
--- |
--- | `Task.mapN` -> `liftN`
 -- |
 -- | `Task.sequence` -> For this, we use the `sequence` function that is a member of the [Traversable](https://pursuit.purescript.org/packages/purescript-foldable-traversable/docs/Data.Traversable#t:Traversable) type class. Note: we are not using a `Traversable` instance of `Task`, we're using the `Traversable` instance of whatever we want to sequence over. So while Elm's `Task.sequence` only works over `List`s, we can sequence over anything that has a `Traversable` instance.
 instance applicativeTask :: Applicative (Task x) where
