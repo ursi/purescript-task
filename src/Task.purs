@@ -6,6 +6,7 @@ module Task
   , Canceler
   , makeTask
   , bindError
+  , (>>!)
   , ForeignCallback
   , fromForeign
   , Promise
@@ -62,6 +63,8 @@ instance monadTask :: Monad (Task x)
 
 instance altTask :: Alt (Task x) where
   alt = bindError <~. const
+
+infixl 1 bindError as >>!
 
 instance semigroupTask :: Semigroup a => Semigroup (Task x a) where
   append = lift2 append
