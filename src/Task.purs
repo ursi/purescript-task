@@ -7,6 +7,7 @@ module Task
   , makeTask
   , bindError
   , (>>!)
+  , liftEither
   , ForeignCallback
   , fromForeign
   , Promise
@@ -17,7 +18,7 @@ module Task
 
 import MasonPrelude
 import Control.Parallel (class Parallel)
-import Control.Monad.Error.Class (class MonadError, class MonadThrow)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError)
 import Data.Bifunctor (class Bifunctor)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
@@ -199,6 +200,11 @@ mapError f (Task t) = Task $ t <~. (.>) f
 
 bindError :: ∀ a x y. Task x a -> (x -> Task y a) -> Task y a
 bindError (Task tx) f = Task \aC yC ref -> tx aC (\x -> unwrap (f x) aC yC ref) ref
+
+liftEither :: ∀ a x. Either x a -> Task x a
+liftEither = case _ of
+  Right a -> pure a
+  Left x -> throwError x
 
 -- | Execute a task, capturing the result with an effectual function.
 capture :: ∀ a x. Callback (x \/ a) -> Task x a -> Effect Unit
