@@ -40,8 +40,8 @@ wait ms =
 readFile :: String -> Task Error String
 readFile path =
   makeTask \aC xC -> do
-    Fs.readFile path case _ of
-      Right buffer -> aC =<< toString UTF8 buffer
+    Fs.readTextFile UTF8 path case _ of
+      Right str -> aC str
       Left error -> xC error
     -- There is no canceler for this task
     pure $ pure unit
