@@ -9,6 +9,7 @@ import Data.Bifunctor (lmap, rmap)
 import Effect.Timer (clearTimeout, setTimeout)
 import Task (Promise, Task, throwError)
 import Task as Task
+import Task.Common (wait)
 import Test.Assert (assert)
 
 main :: Effect Unit
@@ -154,15 +155,10 @@ foreign import resolve :: ∀ x. Effect (Promise x Boolean)
 
 foreign import reject :: ∀ a. Effect (Promise Boolean a)
 
-foreign import waitImpl :: ∀ x. Int -> Effect (Promise x Unit)
-
-wait :: ∀ x. Int -> Task x Unit
-wait = Task.fromPromise <. waitImpl
-
-foreign import waitRejectImpl :: ∀ a. Int -> Effect (Promise Unit a)
-
 waitReject :: ∀ a. Int -> Task Unit a
-waitReject = Task.fromPromise <. waitRejectImpl
+waitReject ms = do
+  wait ms
+  throwError unit
 
 foreign import now :: Effect Int
 
