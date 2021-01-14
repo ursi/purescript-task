@@ -4,3 +4,5 @@ exports.fromPromiseImpl = fromForiegn => effectUnit => effectPromise => {
 		return effectUnit;
 	});
 };
+
+exports.toPromiseImpl = f => () => new Promise(f);

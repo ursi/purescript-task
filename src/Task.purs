@@ -12,6 +12,7 @@ module Task
   , fromForeign
   , Promise
   , fromPromise
+  , toPromise
   , ParTask
   , module Exports
   ) where
@@ -252,6 +253,20 @@ foreign import fromPromiseImpl ::
 -- | ```
 fromPromise :: ∀ x a. Effect (Promise x a) -> Task x a
 fromPromise = fromPromiseImpl fromForeign $ pure unit
+
+foreign import toPromiseImpl :: ∀ a x. EffectFn2 (ForeignCallback a) (ForeignCallback x) Unit -> Effect (Promise x a)
+
+-- | Turn `Task`s into `Promise`s so they can be used in normal JS code.
+toPromise :: ∀ x a. Task x a -> Effect (Promise x a)
+toPromise = toPromiseImpl <. mkEffectFn2 <. helper
+  where
+  helper :: Task x a -> ForeignCallback a -> ForeignCallback x -> Effect Unit
+  helper = flip capture <~.. callback
+
+  callback :: ForeignCallback a -> ForeignCallback x -> Callback (x \/ a)
+  callback aFC xFC = case _ of
+    Right a -> runEffectFn1 aFC a
+    Left x -> runEffectFn1 xFC x
 
 type ForeignCallback a
   = EffectFn1 a Unit

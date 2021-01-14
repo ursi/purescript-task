@@ -150,6 +150,20 @@ main = do
             , wait 500 *> throwError true
             ]
   )
+  assertRight
+    "toPromise -> fromPromise: success"
+    (eq 1)
+    ( pure 1
+        # Task.toPromise
+        # Task.fromPromise
+    )
+  assertLeft
+    "toPromise -> fromPromise: failure"
+    (eq 1)
+    ( throwError 1
+        # Task.toPromise
+        # Task.fromPromise
+    )
 
 foreign import resolve :: ∀ x. Effect (Promise x Boolean)
 
