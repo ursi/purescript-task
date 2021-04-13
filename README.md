@@ -1,3 +1,7 @@
+# Task
+
+[![Pursuit](https://pursuit.purescript.org/packages/purescript-task/badge)](https://pursuit.purescript.org/packages/purescript-task)
+
 This is a library for performing asynchronous effects, heavily inspired by Elm's [Task](https://package.elm-lang.org/packages/elm/core/latest/Task). In terms of functionality, it is a superset of the Elm implementation, with the following additions:
 
 - Tasks can be evaluated in parallel
