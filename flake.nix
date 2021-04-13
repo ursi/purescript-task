@@ -6,19 +6,23 @@
          with pkgs;
          let
            pn = purs-nix { inherit system; };
-           inherit (pn) purs;
+           inherit (pn) purs ps-pkgs;
 
            inherit
              (purs
                 { inherit (import ./package.nix pn) dependencies;
+
+                  test-dependencies =
+                    [ ps-pkgs.ansi
+                      ps-pkgs."assert"
+                    ];
+
                   src = ./src;
                 }
              )
-             compile;
+             shell;
          in
-         { apps.compile = compile {};
-
-           devShell =
+         { devShell =
              with pkgs;
              mkShell
                { buildInputs =
@@ -26,6 +30,7 @@
                      nodePackages.bower
                      nodePackages.pulp
                      purescript
+                     (shell {})
                    ];
                };
          }
