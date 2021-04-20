@@ -35,7 +35,7 @@
                      nodePackages.bower
                      nodePackages.pulp
                      purescript
-                     (shell {})
+                     (shell { inherit package; })
                    ];
                };
          }
