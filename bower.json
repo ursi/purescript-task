@@ -1,19 +1,20 @@
 {
-    "name": "purescript-task",
-    "license": [
-        "BSD-3-Clause"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/ursi/purescript-task.git"
-    },
-    "ignore": [
-        "**/.*",
-        "node_modules",
-        "bower_components",
-        "output"
-    ],
-    "dependencies": {
-        "purescript-mason-prelude": "ursi/purescript-mason-prelude#^v0.4.0"
-    }
+  "dependencies": {
+    "purescript-js-timers": "^v5.0.1",
+    "purescript-mason-prelude": "https://github.com/ursi/purescript-mason-prelude.git#v0.7.1"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "license": [
+    "BSD-3-Clause"
+  ],
+  "name": "purescript-task",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ursi/purescript-task.git"
+  }
 }
