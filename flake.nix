@@ -2,7 +2,7 @@
 
   outputs = { nixpkgs, utils, purs-nix, ... }:
     utils.defaultSystems
-      ({ pkgs, system }:
+      ({ make-shell, pkgs, system }:
          with pkgs;
          let
            pn = purs-nix { inherit system; };
@@ -23,9 +23,9 @@
              shell;
          in
          { devShell =
-             with pkgs;
-             mkShell
-               { buildInputs =
+             make-shell
+               { packages =
+                   with pkgs;
                    [ nodejs
                      nodePackages.bower
                      nodePackages.pulp
