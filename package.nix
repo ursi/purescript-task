@@ -1,6 +1,6 @@
 { ps-pkgs, ps-pkgs-ns, licenses, ... }:
   with ps-pkgs;
-  { version = "0.3.0";
+  { version = "0.3.1";
     dependencies = [ js-timers ps-pkgs-ns.ursi.prelude ];
 
     pursuit =
