@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "purescript-js-timers": "^v5.0.1",
-    "purescript-mason-prelude": "https://github.com/ursi/purescript-mason-prelude.git#v0.7.1"
+    "purescript-js-timers": "^v6.1.0",
+    "purescript-mason-prelude": "https://github.com/ursi/purescript-mason-prelude.git#v0.10.0"
   },
   "ignore": [
     "**/.*",
