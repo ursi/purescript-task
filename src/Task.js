@@ -1,8 +1,8 @@
-exports.fromPromiseImpl = fromForiegn => effectUnit => effectPromise => {
+export const fromPromiseImpl = fromForiegn => effectUnit => effectPromise => {
 	return fromForiegn(aC => xC => () => {
 		effectPromise().then(aC, xC);
 		return effectUnit;
 	});
 };
 
-exports.toPromiseImpl = f => () => new Promise(f);
+export const toPromiseImpl = f => () => new Promise(f);

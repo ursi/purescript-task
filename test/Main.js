@@ -1,5 +1,5 @@
-exports.now = () => Date.now();
+export const now = () => Date.now();
 
-exports.resolve = () => Promise.resolve(true);
+export const resolve = () => Promise.resolve(true);
 
-exports.reject = () => Promise.reject(true);
+export const reject = () => Promise.reject(true);
